@@ -1,49 +1,71 @@
-```markdown
-# LOL — Starter Scaffold (Next.js + Firebase)
+LOL - Live Out Loud 🎉
+Anonymous questions, authentically fun answers
 
-This scaffold provides a professional starting point for the LOL anonymous Q&A app:
-- Next.js 14 (App Router) + TypeScript
-- Tailwind CSS
-- Firebase client & admin helpers
-- /ask/[username] send-flow (client form -> POST /api/messages -> admin save)
-- Simple Perspective moderation hook (configurable via env)
+LOL is the next-generation anonymous Q&A platform that prioritizes safety, authenticity, and real value over manipulation and drama. Connect with friends, fans, and followers through anonymous messages that matter.
 
-Quick start
-1. Copy files to a folder (or run `bash scripts/create_zip.sh`).
-2. Install deps: `npm install`
-3. Create `.env.local` with the required variables (see below).
-4. Run: `npm run dev`
-5. Open: http://localhost:3000
+https://via.placeholder.com/1200x600/6366f1/ffffff?text=LOL+-+Anonymous+Q%2526A+Reimagined
 
-Environment variables (.env.local)
-- NEXT_PUBLIC_FIREBASE_API_KEY=
-- NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
-- NEXT_PUBLIC_FIREBASE_PROJECT_ID=
-- NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
-- NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
-- NEXT_PUBLIC_FIREBASE_APP_ID=
-- FIREBASE_SERVICE_ACCOUNT= (base64-encoded service account JSON) — server only
-- PERSPECTIVE_API_KEY= (optional)
-- TOXICITY_THRESHOLD=0.85 (optional)
+🚀 Features
+🔐 True Privacy & Security
+100% Anonymous Messaging - Zero sender data collection
 
-Security notes
-- Keep FIREBASE_SERVICE_ACCOUNT and PERSPECTIVE_API_KEY server-side only.
-- For production, set secrets in your hosting provider.
-- Add rate-limiting or reCAPTCHA for anonymous senders to control spam.
+AI-Powered Moderation - Smart content filtering that understands context
 
-What’s included
-- src/app/ask/[username]/page.tsx — send message page
-- src/components/MessageForm.tsx — client form
-- src/app/api/messages/route.ts — server API, moderation + Firestore save
-- src/lib/firebaseClient.ts — client init
-- src/lib/firebaseAdmin.ts — server admin init
-- Basic layout and home page
-- scripts/create_zip.sh — generate files & zip
+Granular Safety Controls - Custom filters, panic button, time-based inbox activation
 
-Next steps I can help with
-- Add auth / inbox with real-time Firestore listeners
-- Cloud Functions for push/email notifications
-- Admin dashboard and reporting
+End-to-End Encryption - Secure message routing
 
-Enjoy — want me to generate Phase 1 GitHub issues next?
-```
+💬 Multiple Inbox Types
+Q&A Sessions - Serious questions and answers
+
+Confessions - Deep secrets and stories
+
+Roast Me - Playful humor and teasing
+
+Feedback - Constructive criticism
+
+Compliments - Positive vibes only
+
+🎮 Engagement & Gamification
+Karma System - Earn points for positive interactions
+
+Achievement Badges - Unlock rewards for engagement
+
+Reaction System - React with likes, loves, laughs, fire, and thinking
+
+Story Integration - Post replies to Instagram stories
+
+🎨 Creator-Friendly Tools
+Multiple Inboxes - Manage different audiences and purposes
+
+Advanced Analytics - Track engagement and growth metrics
+
+Custom Branding - Personalized themes and share links
+
+Bulk Management - Efficient message handling
+
+🛠️ Tech Stack
+Frontend
+Next.js 15 - React framework with App Router
+
+TypeScript - Type-safe development
+
+Tailwind CSS - Utility-first styling
+
+Firebase - Backend-as-a-Service
+
+Backend & Infrastructure
+Firebase Authentication - User management
+
+Cloud Firestore - Real-time database
+
+Firebase Storage - File storage
+
+Cloud Functions - Serverless backend
+
+Key Libraries
+React Hook Form - Form management
+
+Lucide React - Beautiful icons
+
+Framer Motion - Smooth animations
