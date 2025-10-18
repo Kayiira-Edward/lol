@@ -1,22 +1,14 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import "./globals.css";
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
+// src/app/layout.tsx
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import './globals.css';
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: "LOL - Live Out Loud | Anonymous Questions Platform",
-  description: "Anonymous questions, authentically fun answers. Share your LOL inbox and get authentic anonymous questions. Safe, fun, and rewarding.",
-  keywords: ["anonymous", "questions", "Q&A", "social", "messaging", "LOL"],
-  authors: [{ name: "LOL Team" }],
-  openGraph: {
-    title: "LOL - Live Out Loud",
-    description: "Anonymous questions, authentically fun answers",
-    type: "website",
-  },
+  title: 'LOL - Anonymous Gen Z Messaging',
+  description: 'Send and receive anonymous messages with your friends. 100% anonymous, 100% fun!',
+  keywords: 'anonymous, messaging, gen z, social, questions, fun',
 };
 
 export default function RootLayout({
@@ -25,13 +17,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en">
       <body className={inter.className}>
-        <TooltipProvider>
-          {children}
-          <Toaster />
-          <Sonner />
-        </TooltipProvider>
+        {children}
       </body>
     </html>
   );

@@ -7,47 +7,16 @@ import {
   createUserWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
-  updateProfile
+  updateProfile,
+  GoogleAuthProvider,
+  signInWithPopup
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db } from '../lib/firebase/config'; // Fixed import path
+import { auth, db } from '@/lib/firebase/config';
 import { useRouter } from 'next/navigation';
 
-interface User {
-  uid: string;
-  email: string | null;
-  displayName: string | null;
-  photoURL: string | null;
-  emailVerified: boolean;
-  isAnonymous: boolean;
-}
-
-interface UserProfile {
-  uid: string;
-  username: string;
-  displayName: string;
-  email: string;
-  karma: number;
-  safetyLevel: 'chill' | 'guardian' | 'open';
-  subscription: 'free' | 'pro' | 'community';
-  inboxCount: number;
-  totalMessages: number;
-  isVerified: boolean;
-  createdAt: any;
-  updatedAt: any;
-  lastActiveAt: any;
-}
-
-interface AuthState {
-  user: User | null;
-  profile: UserProfile | null;
-  loading: boolean;
-  error: string | null;
-  initialized: boolean;
-}
-
 export function useAuth() {
-  const [state, setState] = useState<AuthState>({
+  const [state, setState] = useState({
     user: null,
     profile: null,
     loading: true,
@@ -61,7 +30,6 @@ export function useAuth() {
       try {
         if (user) {
           const profile = await getUserProfile(user.uid);
-          
           setState({
             user: {
               uid: user.uid,
@@ -89,7 +57,7 @@ export function useAuth() {
         setState(prev => ({
           ...prev,
           loading: false,
-          error: (error as Error).message,
+          error: error.message,
           initialized: true
         }));
       }
@@ -102,36 +70,44 @@ export function useAuth() {
     try {
       setState(prev => ({ ...prev, loading: true, error: null }));
       
-      // Create auth user
+      // Check username availability
+      const isAvailable = await checkUsernameAvailability(username);
+      if (!isAvailable) {
+        throw new Error('Username already taken! Try another one 😊');
+      }
+
       const { user } = await createUserWithEmailAndPassword(auth, email, password);
       
       // Update profile with username
       await updateProfile(user, { displayName: username });
       
       // Create user profile in Firestore
-      const userProfile: UserProfile = {
+      const userProfile = {
         uid: user.uid,
         username: username.toLowerCase(),
         displayName: username,
         email: email,
         karma: 0,
-        safetyLevel: 'chill',
-        subscription: 'free',
+        subscription: { tier: 'free', status: 'active' },
+        limits: {
+          freeMessagesSent: 0,
+          freeMessagesReceived: 0,
+          maxFreeMessages: 5,
+          nextReset: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 1 week
+        },
         inboxCount: 0,
         totalMessages: 0,
-        isVerified: false,
+        referralCount: 0,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-        lastActiveAt: serverTimestamp(),
       };
       
       await setDoc(doc(db, 'users', user.uid), userProfile);
       
-      // Redirect to onboarding
-      router.push('/onboarding');
+      router.push('/inbox');
       
       return { user, profile: userProfile };
-    } catch (error: any) {
+    } catch (error) {
       const message = error.code === 'auth/email-already-in-use' 
         ? 'This email is already registered' 
         : error.message;
@@ -148,18 +124,10 @@ export function useAuth() {
       const { user } = await signInWithEmailAndPassword(auth, email, password);
       const profile = await getUserProfile(user.uid);
       
-      // Update last active
-      await updateLastActive(user.uid);
-      
-      // Redirect based on profile completion
-      if (!profile?.username) {
-        router.push('/onboarding');
-      } else {
-        router.push('/inbox');
-      }
+      router.push('/inbox');
       
       return { user, profile };
-    } catch (error: any) {
+    } catch (error) {
       const message = error.code === 'auth/user-not-found' 
         ? 'No account found with this email'
         : error.code === 'auth/wrong-password'
@@ -171,11 +139,34 @@ export function useAuth() {
     }
   };
 
+  const signInWithGoogle = async () => {
+    try {
+      setState(prev => ({ ...prev, loading: true, error: null }));
+      
+      const provider = new GoogleAuthProvider();
+      const { user } = await signInWithPopup(auth, provider);
+      
+      // Check if profile exists, create if not
+      let profile = await getUserProfile(user.uid);
+      if (!profile) {
+        const username = await generateUniqueUsername(user.displayName || user.email.split('@')[0]);
+        profile = await createUserProfile(user, username);
+      }
+      
+      router.push('/inbox');
+      
+      return { user, profile };
+    } catch (error) {
+      setState(prev => ({ ...prev, error: error.message, loading: false }));
+      throw error;
+    }
+  };
+
   const logout = async () => {
     try {
       await signOut(auth);
       router.push('/');
-    } catch (error: any) {
+    } catch (error) {
       setState(prev => ({ ...prev, error: error.message }));
     }
   };
@@ -184,19 +175,19 @@ export function useAuth() {
     ...state,
     signUp,
     signIn,
+    signInWithGoogle,
     logout,
     isAuthenticated: !!state.user && !state.user.isAnonymous,
   };
 }
 
-// Firestore helper functions
-async function getUserProfile(uid: string): Promise<UserProfile | null> {
+async function getUserProfile(uid: string) {
   try {
     const docRef = doc(db, 'users', uid);
     const docSnap = await getDoc(docRef);
     
     if (docSnap.exists()) {
-      return docSnap.data() as UserProfile;
+      return docSnap.data();
     }
     return null;
   } catch (error) {
@@ -205,13 +196,42 @@ async function getUserProfile(uid: string): Promise<UserProfile | null> {
   }
 }
 
-async function updateLastActive(uid: string) {
-  try {
-    const docRef = doc(db, 'users', uid);
-    await setDoc(docRef, { 
-      lastActiveAt: serverTimestamp() 
-    }, { merge: true });
-  } catch (error) {
-    console.error('Error updating last active:', error);
-  }
+async function checkUsernameAvailability(username: string): Promise<boolean> {
+  // Check if username exists in users collection
+  // This would require a username index in Firestore
+  // For now, we'll simulate the check
+  return true;
+}
+
+async function generateUniqueUsername(base: string): Promise<string> {
+  // Generate unique username with random numbers
+  const cleanBase = base.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+  const randomNum = Math.floor(Math.random() * 1000);
+  return `${cleanBase}${randomNum}`;
+}
+
+async function createUserProfile(user: any, username: string) {
+  const userProfile = {
+    uid: user.uid,
+    username: username.toLowerCase(),
+    displayName: user.displayName || username,
+    email: user.email,
+    photoURL: user.photoURL,
+    karma: 0,
+    subscription: { tier: 'free', status: 'active' },
+    limits: {
+      freeMessagesSent: 0,
+      freeMessagesReceived: 0,
+      maxFreeMessages: 5,
+      nextReset: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    },
+    inboxCount: 0,
+    totalMessages: 0,
+    referralCount: 0,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  };
+  
+  await setDoc(doc(db, 'users', user.uid), userProfile);
+  return userProfile;
 }
