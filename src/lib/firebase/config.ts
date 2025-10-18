@@ -1,4 +1,4 @@
-// src/lib/firebase/config.ts
+// src/lib/firebase/config.ts - Updated version
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
@@ -26,7 +26,23 @@ export const storage = getStorage(app);
 // Initialize Analytics conditionally
 export const analytics = isSupported().then(yes => yes ? getAnalytics(app) : null);
 
-// Auth configuration
+// Enhanced auth configuration for better email delivery
 auth.useDeviceLanguage();
+auth.settings.appVerificationDisabledForTesting = false; // Make sure this is false
+
+// Configure action code settings for password reset
+export const actionCodeSettings = {
+  url: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
+  handleCodeInApp: true, // This must be true for mobile apps
+  iOS: {
+    bundleId: 'com.yourapp.bundle' // If you have an iOS app
+  },
+  android: {
+    packageName: 'com.yourapp.package', // If you have an Android app
+    installApp: true,
+    minimumVersion: '12'
+  },
+  dynamicLinkDomain: "lolapp.page.link" // If you have dynamic links configured
+};
 
 export default app;

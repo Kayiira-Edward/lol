@@ -11,10 +11,40 @@ interface GradientTextProps extends React.HTMLAttributes<HTMLSpanElement> {
   speed?: "slow" | "normal" | "fast";
 }
 
+// Pre-defined gradient variants for different use cases
+const GradientTextVariants = {
+  // Brand gradients
+  primary: "from-purple-600 to-pink-600",
+  secondary: "from-blue-500 to-cyan-500",
+  premium: "from-yellow-400 to-amber-500",
+  
+  // Vibe-based gradients
+  love: "from-pink-500 to-rose-500",
+  silly: "from-yellow-400 to-orange-500",
+  spicy: "from-red-500 to-pink-500",
+  deep: "from-blue-500 to-indigo-500",
+  church: "from-emerald-500 to-green-500",
+  vibe: "from-purple-500 to-violet-500",
+  
+  // Status gradients
+  success: "from-green-500 to-emerald-500",
+  warning: "from-yellow-500 to-orange-500",
+  danger: "from-red-500 to-pink-500",
+  info: "from-blue-500 to-cyan-500",
+  
+  // Fun colorful gradients
+  rainbow: "from-red-500 via-purple-500 to-blue-500",
+  sunset: "from-orange-500 to-pink-500",
+  ocean: "from-blue-400 to-cyan-400",
+  forest: "from-green-500 to-emerald-600",
+  candy: "from-pink-400 to-purple-400",
+  neon: "from-cyan-400 to-blue-500"
+}
+
 const GradientText = React.forwardRef<HTMLSpanElement, GradientTextProps>(
   ({ 
     className, 
-    gradient = "from-purple-600 to-pink-600", 
+    gradient = GradientTextVariants.primary, 
     animate = false, 
     hoverEffect = false,
     shimmer = false,
@@ -64,38 +94,8 @@ const GradientText = React.forwardRef<HTMLSpanElement, GradientTextProps>(
 )
 GradientText.displayName = "GradientText"
 
-// Pre-defined gradient variants for different use cases
-export const GradientTextVariants = {
-  // Brand gradients
-  primary: "from-purple-600 to-pink-600",
-  secondary: "from-blue-500 to-cyan-500",
-  premium: "from-yellow-400 to-amber-500",
-  
-  // Vibe-based gradients
-  love: "from-pink-500 to-rose-500",
-  silly: "from-yellow-400 to-orange-500",
-  spicy: "from-red-500 to-pink-500",
-  deep: "from-blue-500 to-indigo-500",
-  church: "from-emerald-500 to-green-500",
-  vibe: "from-purple-500 to-violet-500",
-  
-  // Status gradients
-  success: "from-green-500 to-emerald-500",
-  warning: "from-yellow-500 to-orange-500",
-  danger: "from-red-500 to-pink-500",
-  info: "from-blue-500 to-cyan-500",
-  
-  // Fun colorful gradients
-  rainbow: "from-red-500 via-purple-500 to-blue-500",
-  sunset: "from-orange-500 to-pink-500",
-  ocean: "from-blue-400 to-cyan-400",
-  forest: "from-green-500 to-emerald-600",
-  candy: "from-pink-400 to-purple-400",
-  neon: "from-cyan-400 to-blue-500"
-}
-
 // Animated gradient text with moving gradient
-export const AnimatedGradientText = React.forwardRef<HTMLSpanElement, Omit<GradientTextProps, 'animate'>>(
+const AnimatedGradientText = React.forwardRef<HTMLSpanElement, Omit<GradientTextProps, 'animate'>>(
   ({ className, gradient = "from-purple-600 via-pink-600 to-purple-600", speed = "normal", ...props }, ref) => {
     return (
       <GradientText
@@ -112,7 +112,7 @@ export const AnimatedGradientText = React.forwardRef<HTMLSpanElement, Omit<Gradi
 AnimatedGradientText.displayName = "AnimatedGradientText"
 
 // Interactive gradient text with hover effects
-export const InteractiveGradientText = React.forwardRef<HTMLSpanElement, GradientTextProps>(
+const InteractiveGradientText = React.forwardRef<HTMLSpanElement, GradientTextProps>(
   ({ className, gradient = GradientTextVariants.primary, ...props }, ref) => {
     return (
       <GradientText
@@ -128,7 +128,7 @@ export const InteractiveGradientText = React.forwardRef<HTMLSpanElement, Gradien
 InteractiveGradientText.displayName = "InteractiveGradientText"
 
 // Shimmer effect gradient text
-export const ShimmerGradientText = React.forwardRef<HTMLSpanElement, Omit<GradientTextProps, 'shimmer'>>(
+const ShimmerGradientText = React.forwardRef<HTMLSpanElement, Omit<GradientTextProps, 'shimmer'>>(
   ({ className, gradient = GradientTextVariants.rainbow, ...props }, ref) => {
     return (
       <GradientText
@@ -144,7 +144,7 @@ export const ShimmerGradientText = React.forwardRef<HTMLSpanElement, Omit<Gradie
 ShimmerGradientText.displayName = "ShimmerGradientText"
 
 // Multi-color animated text
-export const RainbowGradientText = React.forwardRef<HTMLSpanElement, React.HTMLAttributes<HTMLSpanElement>>(
+const RainbowGradientText = React.forwardRef<HTMLSpanElement, React.HTMLAttributes<HTMLSpanElement>>(
   ({ className, ...props }, ref) => {
     return (
       <AnimatedGradientText
@@ -160,7 +160,7 @@ export const RainbowGradientText = React.forwardRef<HTMLSpanElement, React.HTMLA
 RainbowGradientText.displayName = "RainbowGradientText"
 
 // Premium gold text effect
-export const PremiumGradientText = React.forwardRef<HTMLSpanElement, React.HTMLAttributes<HTMLSpanElement>>(
+const PremiumGradientText = React.forwardRef<HTMLSpanElement, React.HTMLAttributes<HTMLSpanElement>>(
   ({ className, ...props }, ref) => {
     return (
       <GradientText
@@ -176,7 +176,7 @@ export const PremiumGradientText = React.forwardRef<HTMLSpanElement, React.HTMLA
 PremiumGradientText.displayName = "PremiumGradientText"
 
 // Vibe-specific gradient text components
-export const LoveGradientText = React.forwardRef<HTMLSpanElement, React.HTMLAttributes<HTMLSpanElement>>(
+const LoveGradientText = React.forwardRef<HTMLSpanElement, React.HTMLAttributes<HTMLSpanElement>>(
   ({ className, ...props }, ref) => {
     return (
       <GradientText
@@ -190,7 +190,7 @@ export const LoveGradientText = React.forwardRef<HTMLSpanElement, React.HTMLAttr
 )
 LoveGradientText.displayName = "LoveGradientText"
 
-export const SillyGradientText = React.forwardRef<HTMLSpanElement, React.HTMLAttributes<HTMLSpanElement>>(
+const SillyGradientText = React.forwardRef<HTMLSpanElement, React.HTMLAttributes<HTMLSpanElement>>(
   ({ className, ...props }, ref) => {
     return (
       <GradientText
@@ -204,7 +204,7 @@ export const SillyGradientText = React.forwardRef<HTMLSpanElement, React.HTMLAtt
 )
 SillyGradientText.displayName = "SillyGradientText"
 
-export const SpicyGradientText = React.forwardRef<HTMLSpanElement, React.HTMLAttributes<HTMLSpanElement>>(
+const SpicyGradientText = React.forwardRef<HTMLSpanElement, React.HTMLAttributes<HTMLSpanElement>>(
   ({ className, ...props }, ref) => {
     return (
       <GradientText
@@ -219,7 +219,7 @@ export const SpicyGradientText = React.forwardRef<HTMLSpanElement, React.HTMLAtt
 SpicyGradientText.displayName = "SpicyGradientText"
 
 // Glass morphism gradient text
-export const GlassGradientText = React.forwardRef<HTMLSpanElement, React.HTMLAttributes<HTMLSpanElement>>(
+const GlassGradientText = React.forwardRef<HTMLSpanElement, React.HTMLAttributes<HTMLSpanElement>>(
   ({ className, ...props }, ref) => {
     return (
       <span
@@ -237,10 +237,19 @@ export const GlassGradientText = React.forwardRef<HTMLSpanElement, React.HTMLAtt
 )
 GlassGradientText.displayName = "GlassGradientText"
 
-// Export all components
+// Export all components and variants
 export { 
   GradientText,
-  GradientTextVariants 
+  AnimatedGradientText,
+  InteractiveGradientText,
+  ShimmerGradientText,
+  RainbowGradientText,
+  PremiumGradientText,
+  LoveGradientText,
+  SillyGradientText,
+  SpicyGradientText,
+  GlassGradientText,
+  GradientTextVariants
 }
 
 // CSS animations for the gradient effects

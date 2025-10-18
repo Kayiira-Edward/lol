@@ -1,4 +1,4 @@
-// src/hooks/use-auth.ts
+// src/hooks/use-auth.ts - Fixed with self-contained function
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -11,9 +11,108 @@ import {
   GoogleAuthProvider,
   signInWithPopup
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase/config';
 import { useRouter } from 'next/navigation';
+
+// Self-contained function to ensure user profile exists
+async function ensureUserProfileExists(uid: string): Promise<boolean> {
+  try {
+    const userRef = doc(db, 'users', uid);
+    const userDoc = await getDoc(userRef);
+    
+    if (userDoc.exists()) {
+      return true;
+    }
+
+    // Create user profile if it doesn't exist
+    const user = auth.currentUser;
+    if (!user) {
+      console.error('No authenticated user found');
+      return false;
+    }
+
+    // Generate a unique username
+    let username = user.displayName?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'user';
+    if (username.length < 3) {
+      username = 'user';
+    }
+    
+    // Ensure username is unique
+    let finalUsername = username;
+    let counter = 1;
+    
+    while (counter < 100) {
+      const isAvailable = await checkUsernameAvailability(finalUsername);
+      if (isAvailable) break;
+      finalUsername = `${username}${counter}`;
+      counter++;
+    }
+
+    const userProfile = {
+      uid: user.uid,
+      username: finalUsername,
+      displayName: user.displayName || finalUsername,
+      email: user.email!,
+      photoURL: user.photoURL || null,
+      emailVerified: user.emailVerified || false,
+      karma: 0,
+      subscription: {
+        tier: 'free',
+        status: 'active',
+        since: serverTimestamp()
+      },
+      limits: {
+        freeMessagesSent: 0,
+        freeMessagesReceived: 0,
+        maxFreeMessages: 5,
+        nextReset: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+      },
+      inboxCount: 0,
+      totalMessages: 0,
+      referralCount: 0,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    };
+
+    await setDoc(userRef, userProfile);
+    console.log('✅ User profile created for:', uid);
+    return true;
+    
+  } catch (error) {
+    console.error('❌ Error ensuring user profile exists:', error);
+    return false;
+  }
+}
+
+// Helper function to check username availability
+async function checkUsernameAvailability(username: string): Promise<boolean> {
+  try {
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, where('username', '==', username.toLowerCase()));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.empty;
+  } catch (error) {
+    console.error('Error checking username availability:', error);
+    return false;
+  }
+}
+
+// Helper function to get user profile
+async function getUserProfile(uid: string) {
+  try {
+    const docRef = doc(db, 'users', uid);
+    const docSnap = await getDoc(docRef);
+    
+    if (docSnap.exists()) {
+      return docSnap.data();
+    }
+    return null;
+  } catch (error) {
+    console.error('Error getting user profile:', error);
+    return null;
+  }
+}
 
 export function useAuth() {
   const [state, setState] = useState({
@@ -29,7 +128,7 @@ export function useAuth() {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       try {
         if (user) {
-          // Ensure user profile exists
+          // Ensure user profile exists before getting it
           await ensureUserProfileExists(user.uid);
           
           const profile = await getUserProfile(user.uid);
@@ -66,7 +165,7 @@ export function useAuth() {
         }));
       }
     });
-  
+
     return unsubscribe;
   }, []);
 
@@ -91,13 +190,19 @@ export function useAuth() {
         username: username.toLowerCase(),
         displayName: username,
         email: email,
+        photoURL: user.photoURL || null,
+        emailVerified: user.emailVerified || false,
         karma: 0,
-        subscription: { tier: 'free', status: 'active' },
+        subscription: { 
+          tier: 'free', 
+          status: 'active',
+          since: serverTimestamp()
+        },
         limits: {
           freeMessagesSent: 0,
           freeMessagesReceived: 0,
           maxFreeMessages: 5,
-          nextReset: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 1 week
+          nextReset: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
         },
         inboxCount: 0,
         totalMessages: 0,
@@ -126,6 +231,10 @@ export function useAuth() {
       setState(prev => ({ ...prev, loading: true, error: null }));
       
       const { user } = await signInWithEmailAndPassword(auth, email, password);
+      
+      // Ensure profile exists after sign in
+      await ensureUserProfileExists(user.uid);
+      
       const profile = await getUserProfile(user.uid);
       
       router.push('/inbox');
@@ -150,12 +259,11 @@ export function useAuth() {
       const provider = new GoogleAuthProvider();
       const { user } = await signInWithPopup(auth, provider);
       
-      // Check if profile exists, create if not
-      let profile = await getUserProfile(user.uid);
-      if (!profile) {
-        const username = await generateUniqueUsername(user.displayName || user.email.split('@')[0]);
-        profile = await createUserProfile(user, username);
-      }
+      // Ensure profile exists after Google sign in
+      await ensureUserProfileExists(user.uid);
+      
+      // Get the updated profile
+      const profile = await getUserProfile(user.uid);
       
       router.push('/inbox');
       
@@ -183,59 +291,4 @@ export function useAuth() {
     logout,
     isAuthenticated: !!state.user && !state.user.isAnonymous,
   };
-}
-
-async function getUserProfile(uid: string) {
-  try {
-    const docRef = doc(db, 'users', uid);
-    const docSnap = await getDoc(docRef);
-    
-    if (docSnap.exists()) {
-      return docSnap.data();
-    }
-    return null;
-  } catch (error) {
-    console.error('Error getting user profile:', error);
-    return null;
-  }
-}
-
-async function checkUsernameAvailability(username: string): Promise<boolean> {
-  // Check if username exists in users collection
-  // This would require a username index in Firestore
-  // For now, we'll simulate the check
-  return true;
-}
-
-async function generateUniqueUsername(base: string): Promise<string> {
-  // Generate unique username with random numbers
-  const cleanBase = base.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-  const randomNum = Math.floor(Math.random() * 1000);
-  return `${cleanBase}${randomNum}`;
-}
-
-async function createUserProfile(user: any, username: string) {
-  const userProfile = {
-    uid: user.uid,
-    username: username.toLowerCase(),
-    displayName: user.displayName || username,
-    email: user.email,
-    photoURL: user.photoURL,
-    karma: 0,
-    subscription: { tier: 'free', status: 'active' },
-    limits: {
-      freeMessagesSent: 0,
-      freeMessagesReceived: 0,
-      maxFreeMessages: 5,
-      nextReset: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-    },
-    inboxCount: 0,
-    totalMessages: 0,
-    referralCount: 0,
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  };
-  
-  await setDoc(doc(db, 'users', user.uid), userProfile);
-  return userProfile;
 }

@@ -1,4 +1,4 @@
-// src/app/share/[username]/page.tsx
+// src/app/share/[username]/page.tsx - Updated version
 "use client";
 
 import { useState } from 'react';
@@ -10,11 +10,16 @@ import { MessageCircle, Send, Sparkles, Eye, Crown } from "lucide-react";
 import { EmojiKeyboard } from '@/components/genz/emoji-keyboard';
 import { PromptSuggestions } from '@/components/genz/prompt-suggestions';
 import { useMessageLimits } from '@/hooks/use-message-limits';
+import { useAuth } from '@/hooks/use-auth';
+import { useToast } from '@/hooks/use-toast';
+import { safeSendMessage } from '@/lib/utils/message-utils';
 
 export default function SharePage() {
   const params = useParams();
   const router = useRouter();
   const username = params.username as string;
+  const { user } = useAuth();
+  const toast = useToast();
   
   const [message, setMessage] = useState('');
   const [vibe, setVibe] = useState('vibeCheck');
@@ -22,37 +27,59 @@ export default function SharePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAnonymous, setIsAnonymous] = useState(true);
   
-  const { limits, canSendMessage, incrementMessageCount, getUpgradeMessage } = useMessageLimits();
+  const { limits, canSendMessage, getUpgradeMessage } = useMessageLimits();
   const upgradeMessage = getUpgradeMessage();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!user) {
+      toast.error(
+        'Sign In Required',
+        'Please sign in to send messages'
+      );
+      router.push('/login');
+      return;
+    }
+
     if (!canSendMessage()) {
+      toast.messageLimitReached();
       return;
     }
 
     if (!message.trim()) {
-      alert('Please enter a message!');
+      toast.error(
+        'Empty Message',
+        'Please enter a message before sending'
+      );
       return;
     }
 
     setIsSubmitting(true);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Increment message count
-      await incrementMessageCount();
-      
-      // Show success and reset
-      setMessage('');
-      alert('Message sent successfully! 🎉');
-      
+      const success = await safeSendMessage(user.uid, {
+        receiverUsername: username,
+        content: message,
+        vibe: vibe,
+        anonymous: isAnonymous
+      });
+
+      if (success) {
+        setMessage('');
+        toast.messageSent();
+      } else {
+        toast.error(
+          'Failed to Send',
+          'There was an issue sending your message. Please try again.'
+        );
+      }
     } catch (error) {
       console.error('Error sending message:', error);
-      alert('Failed to send message. Please try again.');
+      toast.error(
+        'Send Failed',
+        'An unexpected error occurred. Please try again.'
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -81,10 +108,17 @@ export default function SharePage() {
             You've used all {limits.total} free messages. Upgrade to premium for unlimited messaging!
           </p>
           <div className="space-y-4">
-            <Button className="w-full text-white bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600">
+            <Button 
+              className="w-full text-white bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+              onClick={() => router.push('/upgrade')}
+            >
               Upgrade to Premium - $2.99/month
             </Button>
-            <Button variant="outline" className="w-full" onClick={() => router.push('/login')}>
+            <Button 
+              variant="outline" 
+              className="w-full" 
+              onClick={() => router.push('/login')}
+            >
               Sign In to Your Account
             </Button>
           </div>
@@ -141,7 +175,7 @@ export default function SharePage() {
           {/* Main Message Form */}
           <div className="lg:col-span-2">
             <Card className="p-6 border-0 shadow-xl bg-white/80 backdrop-blur-sm">
-              <form onSubmit={handleSubmit}>
+              <form onSubmit={handleSendMessage}>
                 {/* Message Input */}
                 <div className="mb-4">
                   <label className="block mb-2 text-sm font-medium text-gray-700">
