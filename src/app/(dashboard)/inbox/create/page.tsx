@@ -7,9 +7,12 @@ import { Button } from "@/components/ui/button";
 import { GradientText } from "@/components/ui/gradient-text";
 import { Link2, Copy, Share2, Check, MessageCircle, Users, Zap } from "lucide-react";
 import { useAuth } from '@/hooks/use-auth';
+import { useToast } from '@/hooks/use-toast';
 
 export default function CreateSharePage() {
   const { user, profile } = useAuth();
+  const toast = useToast();
+  
   const [copied, setCopied] = useState(false);
   
   const shareUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/share/${profile?.username}`;
@@ -18,9 +21,11 @@ export default function CreateSharePage() {
     try {
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
+      toast.copiedToClipboard();
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error('Failed to copy:', err);
+      toast.error('Copy Failed', 'Failed to copy link to clipboard');
     }
   };
 
@@ -174,16 +179,16 @@ export default function CreateSharePage() {
               </h3>
               <div className="space-y-3">
                 <div className="flex justify-between">
-                  <span>Link Clicks</span>
-                  <span className="font-bold">24</span>
-                </div>
-                <div className="flex justify-between">
                   <span>Messages Received</span>
-                  <span className="font-bold">8</span>
+                  <span className="font-bold">{profile?.inboxCount || 0}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Replies Sent</span>
-                  <span className="font-bold">3</span>
+                  <span>Link Clicks</span>
+                  <span className="font-bold">0</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Profile Views</span>
+                  <span className="font-bold">0</span>
                 </div>
               </div>
             </Card>
